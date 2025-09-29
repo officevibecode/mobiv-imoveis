@@ -163,14 +163,20 @@ class PropertyResource extends Resource
                                 Forms\Components\FileUpload::make('cover_image')
                                     ->label('Imagem de Capa')
                                     ->image()
+                                    ->disk('public')
                                     ->directory('properties/covers')
+                                    ->visibility('public')
+                                    ->maxSize(5120)
                                     ->columnSpanFull(),
                                 Forms\Components\FileUpload::make('gallery')
                                     ->label('Galeria')
                                     ->image()
                                     ->multiple()
+                                    ->disk('public')
                                     ->directory('properties/gallery')
+                                    ->visibility('public')
                                     ->maxFiles(30)
+                                    ->maxSize(5120)
                                     ->reorderable()
                                     ->columnSpanFull(),
                             ]),
