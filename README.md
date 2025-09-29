@@ -66,11 +66,18 @@ DB_PASSWORD=
 mysql -u root -p -e "CREATE DATABASE mobiv_imoveis CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 ```
 
-### 6. Executar migrações
+### 6. Executar migrações e seeders
 
 ```bash
-php artisan migrate
+php artisan migrate --seed
 ```
+
+Este comando irá:
+- Criar todas as tabelas da base de dados
+- Popular com 50 imóveis de demonstração
+- Criar 5 categorias e 12 tags
+- Criar 1 utilizador admin (email: `imoveis@grupomobiv.pt`, password: `password`)
+- Criar 1 token de feed demo
 
 ## Executar o Projeto
 
@@ -110,6 +117,36 @@ composer lint        # Executa Laravel Pint (code style)
 composer lint:fix    # Corrige code style automaticamente
 composer cs-fix      # Executa PHP CS Fixer
 ```
+
+## Testes
+
+O projeto usa **Pest PHP** para testes.
+
+### Executar todos os testes
+
+```bash
+php artisan test
+```
+
+ou
+
+```bash
+./vendor/bin/pest
+```
+
+### Executar testes específicos
+
+```bash
+php artisan test --filter PropertyTest
+```
+
+### Testes disponíveis
+
+- Criação de propriedades com campos obrigatórios
+- Validação de slug único
+- Relações (tags/categorias)
+- Geração de gallery JSON pela factory
+- Validação de casts e tipos
 
 ## Estrutura do Projeto
 
