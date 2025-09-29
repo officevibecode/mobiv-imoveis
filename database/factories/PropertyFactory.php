@@ -6,12 +6,41 @@ use App\Enums\EnergyCertificate;
 use App\Enums\PropertyCondition;
 use App\Enums\PropertyStatus;
 use App\Enums\PropertyTypology;
+use App\Models\Property;
 use App\Support\PortugalGeo;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
 class PropertyFactory extends Factory
 {
+    public function configure(): static
+    {
+        return $this->afterMaking(function (Property $property) {
+            // Recalculate published_at based on final status
+            if (in_array($property->status, [PropertyStatus::ATIVO, PropertyStatus::RESERVADO, PropertyStatus::VENDIDO])) {
+                if ($property->published_at === null) {
+                    $property->published_at = now()->subDays(fake()->numberBetween(1, 180));
+                }
+            } else {
+                $property->published_at = null;
+            }
+            
+            // Recalculate bedrooms based on final typology
+            if ($property->typology !== PropertyTypology::TERRENO && $property->typology !== PropertyTypology::LOJA) {
+                $property->bedrooms = match ($property->typology) {
+                    PropertyTypology::T0 => 0,
+                    PropertyTypology::T1 => 1,
+                    PropertyTypology::T2 => 2,
+                    PropertyTypology::T3 => 3,
+                    PropertyTypology::T4 => 4,
+                    PropertyTypology::T5 => 5,
+                    PropertyTypology::T6 => 6,
+                    default => $property->bedrooms,
+                };
+            }
+        });
+    }
+
     public function definition(): array
     {
         // Status distribution: 70% ativo, 15% reservado, 10% vendido, 5% rascunho
@@ -94,8 +123,8 @@ class PropertyFactory extends Factory
             'city' => $location['city'],
             'district' => $location['district'],
             'parish' => $location['parish'],
-            'latitude' => $location['latitude'],
-            'longitude' => $location['longitude'],
+            'latitude' => (float) $location['latitude'],
+            'longitude' => (float) $location['longitude'],
             'cover_image' => $coverImage,
             'gallery' => $gallery,
             'seo_title' => $seoTitle,

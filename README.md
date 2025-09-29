@@ -183,6 +183,43 @@ As cores estão configuradas no `tailwind.config.js` e podem ser usadas como:
 - `bg-primary`, `text-primary`, `border-primary`
 - `bg-accent`, `text-accent`, `border-accent`
 
+## Data Seeding (PT-PT)
+
+O projeto inclui seeders realistas com dados em português de Portugal.
+
+### Executar Seeding Completo
+
+```bash
+php artisan migrate:fresh --seed
+```
+
+Isto irá criar:
+- **50 propriedades** (70% ativas, 15% reservadas, 10% vendidas, 5% rascunho)
+- **5 categorias** (Apartamento, Moradia, Terreno, Loja/Comércio, Investimento)
+- **12 tags** (Vista Mar, Pronto a Habitar, Remodelado, Garagem, etc.)
+- **1 utilizador admin** (email: `office@vibecode.pt`, password: `M0biv#2025!`)
+- **1 feeds token** (demo)
+
+### Executar Seeders Individuais
+
+```bash
+php artisan db:seed --class=PropertySeeder
+php artisan db:seed --class=CategorySeeder
+php artisan db:seed --class=TagSeeder
+```
+
+### Características dos Dados
+
+- **Localização:** Cidades portuguesas reais (Lisboa, Porto, Cascais, Oeiras, Braga, Coimbra, Aveiro, Setúbal, Faro, Albufeira)
+- **Coordenadas:** Latitude/longitude coerentes por região
+- **Preços:** Ranges realistas por tipologia (T0: 80k-180k, T3: 220k-450k, T6: 500k-1.2M)
+- **Áreas:** Coerentes com tipologia (T1: 50-75m², T4: 120-200m²)
+- **Imagens:** Placeholders públicos via Picsum (5-8 por propriedade)
+- **Descrições:** HTML com bullets, em PT-PT
+- **SEO:** Títulos ≤70 chars, descrições ≤170 chars
+
+> **Nota:** As imagens são URLs públicas de placeholder. Substitua por imagens reais em produção.
+
 ## Code Style
 
 O projeto usa **Laravel Pint** e **PHP CS Fixer** para manter consistência no código.
