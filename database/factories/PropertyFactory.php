@@ -6,104 +6,171 @@ use App\Enums\EnergyCertificate;
 use App\Enums\PropertyCondition;
 use App\Enums\PropertyStatus;
 use App\Enums\PropertyTypology;
+use App\Support\PortugalGeo;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
-/**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Property>
- */
 class PropertyFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
-        $title = fake()->randomElement([
-            'Apartamento T2 com Vista Mar',
-            'Moradia T3 com Jardim',
-            'Apartamento T1 Renovado Centro',
-            'Vivenda T4 com Piscina',
-            'Loja Comercial Zona Prime',
-            'Terreno para Construção',
-            'Apartamento T3 Luxo',
-            'Moradia Geminada T2',
-            'Penthouse T4 Vista Rio',
-            'Estúdio Moderno Centro',
-        ]);
-
-        $cities = ['Lisboa', 'Porto', 'Braga', 'Coimbra', 'Faro', 'Aveiro', 'Setúbal', 'Évora'];
-        $city = fake()->randomElement($cities);
-        
-        $districts = [
-            'Lisboa' => ['Lisboa', 'Sintra', 'Cascais', 'Oeiras'],
-            'Porto' => ['Porto', 'Matosinhos', 'Vila Nova de Gaia', 'Maia'],
-            'Braga' => ['Braga', 'Guimarães', 'Barcelos'],
-            'Coimbra' => ['Coimbra', 'Figueira da Foz'],
-            'Faro' => ['Faro', 'Albufeira', 'Portimão', 'Lagos'],
-            'Aveiro' => ['Aveiro', 'Ílhavo', 'Ovar'],
-            'Setúbal' => ['Setúbal', 'Almada', 'Seixal'],
-            'Évora' => ['Évora', 'Estremoz'],
-        ];
-
-        $district = fake()->randomElement($districts[$city]);
-        
-        $slug = Str::slug($title) . '-' . fake()->unique()->numberBetween(1000, 9999);
-
-        $typology = fake()->randomElement(PropertyTypology::cases());
-        $bedrooms = match($typology) {
-            PropertyTypology::T0 => 0,
-            PropertyTypology::T1 => 1,
-            PropertyTypology::T2 => 2,
-            PropertyTypology::T3 => 3,
-            PropertyTypology::T4 => 4,
-            PropertyTypology::T5 => 5,
-            PropertyTypology::T6 => 6,
-            default => null,
+        // Status distribution: 70% ativo, 15% reservado, 10% vendido, 5% rascunho
+        $rand = fake()->numberBetween(1, 100);
+        $status = match (true) {
+            $rand <= 70 => PropertyStatus::ATIVO,
+            $rand <= 85 => PropertyStatus::RESERVADO,
+            $rand <= 95 => PropertyStatus::VENDIDO,
+            default => PropertyStatus::RASCUNHO,
         };
 
-        // Real estate images from Unsplash
-        $imageIds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-        $randomId = fake()->randomElement($imageIds);
+        // Typology with distribution bias
+        $typology = fake()->randomElement([
+            PropertyTypology::T0,
+            PropertyTypology::T1, PropertyTypology::T1,
+            PropertyTypology::T2, PropertyTypology::T2, PropertyTypology::T2,
+            PropertyTypology::T3, PropertyTypology::T3,
+            PropertyTypology::T4,
+            PropertyTypology::T5,
+            PropertyTypology::T6,
+            PropertyTypology::TERRENO,
+            PropertyTypology::LOJA,
+        ]);
+
+        // Get coherent data based on typology
+        [$area, $priceRange, $bedrooms, $bathrooms] = $this->getTypologyData($typology);
         
+        // Location
+        $location = PortugalGeo::randomLocation();
+        
+        // Title construction (10-120 chars)
+        $benefits = ['varanda', 'garagem', 'piscina', 'jardim', 'vista mar', 'terraço', 'renovado', 'centro'];
+        $benefit = fake()->randomElement($benefits);
+        
+        $titleVariants = [
+            "{$typology->value} em {$location['city']} — {$benefit}",
+            "{$typology->value} com {$benefit} em {$location['city']}",
+            "{$typology->value} {$location['city']} — {$benefit} e garagem",
+            "Excelente {$typology->value} em {$location['city']}",
+        ];
+        $title = fake()->randomElement($titleVariants);
+        $slug = Str::slug($title) . '-' . fake()->unique()->numberBetween(1000, 9999);
+
+        // Description with HTML bullets
+        $description = $this->generateDescription($typology, $location, $area);
+
+        // Gallery (5-8 images with Picsum)
+        $galleryCount = fake()->numberBetween(5, 8);
         $gallery = [];
-        for ($i = 1; $i <= 5; $i++) {
-            $gallery[] = "https://images.unsplash.com/photo-" . (1560184564 + $i * 1000000) . "?w=800&h=600&fit=crop&auto=format&q=80";
+        $seedBase = fake()->numberBetween(10000, 99999);
+        for ($i = 0; $i < $galleryCount; $i++) {
+            $gallery[] = "https://picsum.photos/seed/{$seedBase}-{$i}/800/600";
         }
 
-        $description = "Esta propriedade única oferece um equilíbrio perfeito entre conforto moderno e elegância atemporal. Com acabamentos de alta qualidade e atenção meticulosa aos detalhes, cada espaço foi cuidadosamente projetado para proporcionar uma experiência de vida excepcional.\n\nOs amplos espaços interiores são banhados por luz natural, criando um ambiente acolhedor e sofisticado. A cozinha totalmente equipada e as áreas de estar generosas tornam esta propriedade ideal tanto para o dia a dia como para receber convidados.\n\nLocalizada numa zona privilegiada com excelentes acessos e todas as comodidades nas proximidades, esta é uma oportunidade rara de adquirir uma propriedade verdadeiramente especial.";
+        // Cover image
+        $coverImage = "https://picsum.photos/seed/{$seedBase}-cover/1200/800";
+
+        // SEO
+        $seoTitle = Str::limit("{$title} | MOBIV Imóveis", 70);
+        $seoDescription = Str::limit("Descubra este {$typology->value} em {$location['city']}, {$location['district']}. {$area}m². Contacte-nos!", 170);
+
+        // Published_at based on status
+        $publishedAt = in_array($status, [PropertyStatus::ATIVO, PropertyStatus::RESERVADO, PropertyStatus::VENDIDO])
+            ? now()->subDays(fake()->numberBetween(1, 180))
+            : null;
 
         return [
             'title' => $title,
             'slug' => $slug,
             'description' => $description,
-            'price' => fake()->randomFloat(2, 50000, 1500000),
+            'price' => fake()->randomFloat(2, $priceRange[0], $priceRange[1]),
             'typology' => $typology,
-            'area' => fake()->numberBetween(40, 500),
+            'area' => $area,
             'bedrooms' => $bedrooms,
-            'bathrooms' => fake()->numberBetween(1, 5),
-            'parking' => fake()->numberBetween(0, 3),
-            'condition' => fake()->randomElement(PropertyCondition::cases()),
-            'status' => fake()->randomElement([PropertyStatus::ATIVO, PropertyStatus::ATIVO, PropertyStatus::RESERVADO, PropertyStatus::RASCUNHO]),
+            'bathrooms' => $bathrooms,
+            'parking' => $typology === PropertyTypology::TERRENO ? 0 : fake()->numberBetween(0, 1),
+            'condition' => $this->getCondition(),
+            'status' => $status,
             'address' => fake()->streetAddress(),
-            'city' => $city,
-            'district' => $district,
-            'parish' => fake()->city(),
-            'latitude' => fake()->latitude(36.5, 42.5),
-            'longitude' => fake()->longitude(-9.5, -6.0),
-            'cover_image' => "https://images.unsplash.com/photo-156018" . str_pad($randomId, 4, '0', STR_PAD_LEFT) . "?w=1920&h=1080&fit=crop&auto=format&q=85",
+            'city' => $location['city'],
+            'district' => $location['district'],
+            'parish' => $location['parish'],
+            'latitude' => $location['latitude'],
+            'longitude' => $location['longitude'],
+            'cover_image' => $coverImage,
             'gallery' => $gallery,
-            'seo_title' => Str::limit($title, 70),
-            'seo_description' => Str::limit(fake()->sentence(15), 170),
+            'seo_title' => $seoTitle,
+            'seo_description' => $seoDescription,
             'canonical_url' => null,
             'noindex' => false,
             'energy_certificate' => fake()->randomElement(EnergyCertificate::cases()),
-            'year_built' => fake()->numberBetween(1980, 2024),
-            'published_at' => fake()->boolean(80) ? now() : null,
+            'year_built' => fake()->numberBetween(1960, 2025),
+            'published_at' => $publishedAt,
             'created_by' => null,
             'updated_by' => null,
         ];
+    }
+
+    private function getTypologyData(PropertyTypology $typology): array
+    {
+        return match ($typology) {
+            PropertyTypology::T0 => [fake()->numberBetween(25, 45), [80000, 180000], 0, 1],
+            PropertyTypology::T1 => [fake()->numberBetween(50, 75), [120000, 280000], 1, 1],
+            PropertyTypology::T2 => [fake()->numberBetween(70, 110), [180000, 380000], 2, fake()->numberBetween(1, 2)],
+            PropertyTypology::T3 => [fake()->numberBetween(90, 140), [220000, 450000], 3, 2],
+            PropertyTypology::T4 => [fake()->numberBetween(120, 200), [280000, 650000], 4, fake()->numberBetween(2, 3)],
+            PropertyTypology::T5 => [fake()->numberBetween(180, 280), [400000, 950000], 5, 3],
+            PropertyTypology::T6 => [fake()->numberBetween(220, 350), [500000, 1200000], 6, fake()->numberBetween(3, 4)],
+            PropertyTypology::LOJA => [fake()->numberBetween(25, 200), [80000, 600000], null, fake()->numberBetween(1, 2)],
+            PropertyTypology::TERRENO => [fake()->numberBetween(200, 2000), [40000, 400000], null, null],
+        };
+    }
+
+    private function getCondition(): PropertyCondition
+    {
+        $rand = fake()->numberBetween(1, 100);
+        return match (true) {
+            $rand <= 25 => PropertyCondition::NOVO,
+            $rand <= 60 => PropertyCondition::USADO,
+            $rand <= 85 => PropertyCondition::RENOVADO,
+            default => PropertyCondition::EM_CONSTRUCAO,
+        };
+    }
+
+    private function generateDescription(PropertyTypology $typology, array $location, int $area): string
+    {
+        $intro = fake()->randomElement([
+            "Esta propriedade representa uma excelente oportunidade em {$location['city']}, {$location['district']}.",
+            "Localizada em zona privilegiada de {$location['city']}, esta propriedade oferece conforto e qualidade.",
+            "Descubra este imóvel único em {$location['city']}, perfeito para quem valoriza conforto e localização.",
+        ]);
+
+        $features = [
+            "Acabamentos de alta qualidade",
+            "Excelentes acessos e transportes",
+            "Proximidade a comércio e serviços",
+            "Cozinha equipada",
+            "Áreas amplas e luminosas",
+            "Ótima exposição solar",
+            "Zona calma e residencial",
+        ];
+
+        if ($typology !== PropertyTypology::TERRENO && $typology !== PropertyTypology::LOJA) {
+            $features[] = "Quartos com roupeiros";
+        }
+
+        if ($area > 100) {
+            $features[] = "Varanda espaçosa";
+        }
+
+        shuffle($features);
+        $selectedFeatures = array_slice($features, 0, fake()->numberBetween(4, 5));
+
+        $bullets = "<ul>\n";
+        foreach ($selectedFeatures as $feature) {
+            $bullets .= "  <li>{$feature}</li>\n";
+        }
+        $bullets .= "</ul>";
+
+        return $intro . "\n\n" . $bullets . "\n\nAgende já a sua visita!";
     }
 }
