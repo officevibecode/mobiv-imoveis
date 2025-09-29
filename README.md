@@ -192,6 +192,76 @@ Executar antes de cada commit:
 composer lint
 ```
 
+## Autenticação OTP (Sem Password)
+
+### Fluxo de Autenticação
+
+1. **Solicitar Código:**
+```bash
+POST /api/otp/request
+{
+  "email": "user@example.com"
+}
+```
+
+2. **Verificar Código:**
+```bash
+POST /api/otp/verify
+{
+  "email": "user@example.com",
+  "code": "123456"
+}
+```
+
+### Configuração de E-mail
+
+Adicione ao `.env`:
+```env
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=imoveis@grupomobiv.pt
+MAIL_PASSWORD=your-password
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=imoveis@grupomobiv.pt
+MAIL_FROM_NAME="MOBIV Imóveis"
+```
+
+### Segurança
+
+- **Rate Limiting:** 5 tentativas/hora por IP/email
+- **Expiração:** Códigos expiram em 10 minutos
+- **Bloqueio:** 5 tentativas falhadas = bloqueio de 15 minutos
+- **Hash:** Códigos guardados com SHA-256
+
+### Erros Comuns
+
+- `Demasiadas tentativas` - Aguarde o tempo indicado
+- `Código expirado` - Solicite novo código
+- `Código inválido` - Verifique o código recebido por e-mail
+
+## Analytics & RGPD
+
+### Configuração
+
+Adicione ao `.env`:
+```env
+GA4_ID=G-XXXXXXXXXX
+FACEBOOK_PIXEL_ID=XXXXXXXXXX
+```
+
+### Consent Mode
+
+- **Sem consentimento:** GA4/Pixel NÃO carregam
+- **Com consentimento:** Scripts carregam automaticamente
+- **Preferências:** Essenciais / Analytics / Marketing
+
+### Eventos Tracked
+
+- `property_view` - Visualização de imóvel
+- `property_click` - Clique em card de imóvel
+- `whatsapp_click` - Clique no CTA WhatsApp
+
 ## Licença
 
 Proprietário - MOBIV © 2025
