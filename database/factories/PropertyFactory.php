@@ -64,15 +64,21 @@ class PropertyFactory extends Factory
             default => null,
         };
 
+        // Real estate images from Unsplash
+        $imageIds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+        $randomId = fake()->randomElement($imageIds);
+        
         $gallery = [];
         for ($i = 1; $i <= 5; $i++) {
-            $gallery[] = 'https://via.placeholder.com/800x600.png?text=Property+Image+' . $i;
+            $gallery[] = "https://images.unsplash.com/photo-" . (1560184564 + $i * 1000000) . "?w=800&h=600&fit=crop&auto=format&q=80";
         }
+
+        $description = "Esta propriedade única oferece um equilíbrio perfeito entre conforto moderno e elegância atemporal. Com acabamentos de alta qualidade e atenção meticulosa aos detalhes, cada espaço foi cuidadosamente projetado para proporcionar uma experiência de vida excepcional.\n\nOs amplos espaços interiores são banhados por luz natural, criando um ambiente acolhedor e sofisticado. A cozinha totalmente equipada e as áreas de estar generosas tornam esta propriedade ideal tanto para o dia a dia como para receber convidados.\n\nLocalizada numa zona privilegiada com excelentes acessos e todas as comodidades nas proximidades, esta é uma oportunidade rara de adquirir uma propriedade verdadeiramente especial.";
 
         return [
             'title' => $title,
             'slug' => $slug,
-            'description' => fake()->paragraphs(3, true),
+            'description' => $description,
             'price' => fake()->randomFloat(2, 50000, 1500000),
             'typology' => $typology,
             'area' => fake()->numberBetween(40, 500),
@@ -87,7 +93,7 @@ class PropertyFactory extends Factory
             'parish' => fake()->city(),
             'latitude' => fake()->latitude(36.5, 42.5),
             'longitude' => fake()->longitude(-9.5, -6.0),
-            'cover_image' => 'https://via.placeholder.com/1200x800.png?text=Cover+Image',
+            'cover_image' => "https://images.unsplash.com/photo-156018" . str_pad($randomId, 4, '0', STR_PAD_LEFT) . "?w=1920&h=1080&fit=crop&auto=format&q=85",
             'gallery' => $gallery,
             'seo_title' => Str::limit($title, 70),
             'seo_description' => Str::limit(fake()->sentence(15), 170),

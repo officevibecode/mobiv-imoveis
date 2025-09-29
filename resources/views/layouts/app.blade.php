@@ -80,7 +80,7 @@
     @stack('styles')
 </head>
 <body class="antialiased bg-gray-50">
-    {{ $slot }}
+    @yield('content')
 
     <!-- Cookie Banner -->
     <x-cookie-banner />
