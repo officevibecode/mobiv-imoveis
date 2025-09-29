@@ -39,5 +39,5 @@ Route::get('/politica-cookies', function () {
     return view('legal.cookies');
 })->name('legal.cookies');
 
-// Sitemap
-Route::get('/sitemap.xml', [\App\Http\Controllers\SitemapController::class, 'index']);
+// Sitemap (TODO)
+// Route::get('/sitemap.xml', [\App\Http\Controllers\SitemapController::class, 'index']);
